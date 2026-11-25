@@ -28,3 +28,6 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+- Keep mentor directory enrichment, filtering and request validation in a browser-safe data module; this preserves the original shared homepage examples.
+- Mentor requests are frontend-only demonstrations and must not claim real delivery or persistence; any future submission service must revalidate the shared schema server-side.
