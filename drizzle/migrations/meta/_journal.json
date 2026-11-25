@@ -1,5 +1,13 @@
 {
   "version": "7",
   "dialect": "postgresql",
-  "entries": []
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1795592801480,
+      "tag": "0000_skillbridge_private_profiles_and_public_directory",
+      "breakpoints": true
+    }
+  ]
 }

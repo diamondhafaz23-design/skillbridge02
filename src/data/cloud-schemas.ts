@@ -1,0 +1,10 @@
+import { z } from 'zod';
+import { QUIZ } from './skillbridge';
+const text = z.string().trim().max(5000);
+const list = z.array(z.string().trim().min(1).max(100)).max(100);
+export const experienceSchema = z.object({ occupation: text.min(1), years: z.number().int().min(0).max(60), practical: list, projects: text, informal: text, transferable: list, languages: list, interests: text });
+export const assessmentSchema = z.object({ quizAnswers: z.array(z.number().int().min(0).max(2)).max(QUIZ.length), experience: experienceSchema });
+export const profileSchema = z.object({ full_name: z.string().trim().min(1).max(100), professional_title: text.min(1), work_experience: text, years_experience: z.number().int().min(0).max(60), education: text, languages: list, location: text, professional_summary: text });
+export const profileSaveSchema = z.object({ profile: profileSchema, skills: list });
+export const EMPTY_PROFILE = { full_name: '', professional_title: '', work_experience: '', years_experience: 0, education: '', languages: [] as string[], location: '', professional_summary: '' };
+export type ProfileFields = z.infer<typeof profileSchema>;

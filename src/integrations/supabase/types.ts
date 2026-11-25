@@ -14,13 +14,282 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      assessments: {
+        Row: {
+          category: string
+          completed_at: string
+          id: string
+          questions_answered: Json
+          results: Json
+          score: number
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          completed_at?: string
+          id?: string
+          questions_answered?: Json
+          results?: Json
+          score?: number
+          user_id: string
+        }
+        Update: {
+          category?: string
+          completed_at?: string
+          id?: string
+          questions_answered?: Json
+          results?: Json
+          score?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      mentors: {
+        Row: {
+          experience_years: number
+          expertise: string[]
+          id: string
+          is_sample: boolean
+          languages: string[]
+          name: string
+          profession: string
+          professional_industry: string
+          sample_key: string | null
+          short_biography: string
+          skills: string[]
+          story: string
+        }
+        Insert: {
+          experience_years?: number
+          expertise?: string[]
+          id?: string
+          is_sample?: boolean
+          languages?: string[]
+          name: string
+          profession?: string
+          professional_industry: string
+          sample_key?: string | null
+          short_biography?: string
+          skills?: string[]
+          story?: string
+        }
+        Update: {
+          experience_years?: number
+          expertise?: string[]
+          id?: string
+          is_sample?: boolean
+          languages?: string[]
+          name?: string
+          profession?: string
+          professional_industry?: string
+          sample_key?: string | null
+          short_biography?: string
+          skills?: string[]
+          story?: string
+        }
+        Relationships: []
+      }
+      mentorship_requests: {
+        Row: {
+          contact_email: string
+          created_at: string
+          id: string
+          mentor_id: string
+          message: string
+          preferred_language: string
+          requester_name: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          contact_email: string
+          created_at?: string
+          id?: string
+          mentor_id: string
+          message: string
+          preferred_language: string
+          requester_name: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          contact_email?: string
+          created_at?: string
+          id?: string
+          mentor_id?: string
+          message?: string
+          preferred_language?: string
+          requester_name?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentorship_requests_mentor_id_fkey"
+            columns: ["mentor_id"]
+            isOneToOne: false
+            referencedRelation: "mentors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mentorship_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      opportunities: {
+        Row: {
+          credential_flexible: boolean
+          description: string
+          employer: string
+          employment_type: string
+          experience_requirements: string
+          id: string
+          is_sample: boolean
+          job_title: string
+          languages: string[]
+          location: string
+          required_skills: string[]
+          sample_key: string | null
+        }
+        Insert: {
+          credential_flexible?: boolean
+          description?: string
+          employer: string
+          employment_type?: string
+          experience_requirements?: string
+          id?: string
+          is_sample?: boolean
+          job_title: string
+          languages?: string[]
+          location?: string
+          required_skills?: string[]
+          sample_key?: string | null
+        }
+        Update: {
+          credential_flexible?: boolean
+          description?: string
+          employer?: string
+          employment_type?: string
+          experience_requirements?: string
+          id?: string
+          is_sample?: boolean
+          job_title?: string
+          languages?: string[]
+          location?: string
+          required_skills?: string[]
+          sample_key?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          education: string
+          full_name: string
+          languages: string[]
+          location: string
+          professional_summary: string
+          professional_title: string
+          updated_at: string
+          user_id: string
+          work_experience: string
+          years_experience: number
+        }
+        Insert: {
+          created_at?: string
+          education?: string
+          full_name?: string
+          languages?: string[]
+          location?: string
+          professional_summary?: string
+          professional_title?: string
+          updated_at?: string
+          user_id: string
+          work_experience?: string
+          years_experience?: number
+        }
+        Update: {
+          created_at?: string
+          education?: string
+          full_name?: string
+          languages?: string[]
+          location?: string
+          professional_summary?: string
+          professional_title?: string
+          updated_at?: string
+          user_id?: string
+          work_experience?: string
+          years_experience?: number
+        }
+        Relationships: []
+      }
+      skills: {
+        Row: {
+          assessment_id: string | null
+          id: string
+          origin: string
+          skill_name: string
+          source: string
+          user_id: string
+        }
+        Insert: {
+          assessment_id?: string | null
+          id?: string
+          origin: string
+          skill_name: string
+          source: string
+          user_id: string
+        }
+        Update: {
+          assessment_id?: string | null
+          id?: string
+          origin?: string
+          skill_name?: string
+          source?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skills_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "assessments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skills_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      save_skillbridge_assessment: {
+        Args: { p_answers: Json; p_experience: Json }
+        Returns: string
+      }
+      save_skillbridge_profile: {
+        Args: { p_profile: Json; p_skills: string[] }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

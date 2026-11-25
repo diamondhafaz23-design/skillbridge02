@@ -10,6 +10,7 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
+import { AccountProvider } from "@/components/AccountProvider";
 import { SiteHeader, SiteFooter } from "../components/SiteHeader";
 import { Toaster } from "../components/ui/sonner";
 import appCss from "../styles.css?url";
@@ -128,10 +129,12 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+      <AccountProvider>
       <SiteHeader />
       <main><Outlet /></main>
       <SiteFooter />
       <Toaster />
+      </AccountProvider>
     </QueryClientProvider>
   );
 }

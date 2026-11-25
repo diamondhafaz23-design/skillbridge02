@@ -30,6 +30,9 @@ use the editor.
 <!-- LOVABLE:END -->
 
 - Keep mentor directory enrichment, filtering and request validation in a browser-safe data module; this preserves the original shared homepage examples.
-- Mentor requests are frontend-only demonstrations and must not claim real delivery or persistence; any future submission service must revalidate the shared schema server-side.
-- Assessment results are saved in browser localStorage only; verified skills come solely from correct quiz answers and self-reported skills are weighted lower in matching.
+- Authenticated mentorship requests persist through a server function that revalidates the shared request schema; fictional mentors are never contacted.
+- Account assessments persist atomically through a database function that calculates scores from quiz answers; guest browser results remain a clearly labeled local-only demo. Self-reported skills stay lower-weighted.
 - Lovable Cloud provides the backend; use its generated clients and TanStack Start server functions so data access stays inside the project's supported architecture.
+
+- Public directory pages use shared loader/query options with anonymous read-only access; private queries use authenticated server functions keyed by account identity to prevent cross-user caching.
+- One root account provider owns the auth subscriber and cache teardown; public pages offer inline sign-in notices rather than exposing private records to visitors.

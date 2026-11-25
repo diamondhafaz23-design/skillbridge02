@@ -1,5 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
+import { useAccount } from "./AccountProvider";
+import { Button } from "./ui/button";
+import { toast } from "sonner";
 import { Menu, X } from "lucide-react";
 
 const NAV = [
@@ -20,6 +23,8 @@ export function Logo() {
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
+  const { user, signOut } = useAccount();
+  const logout = () => { void signOut().catch(() => toast.error("Could not sign out. Please try again.")); };
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
@@ -28,14 +33,16 @@ export function SiteHeader() {
           {NAV.map((n) => (
             <Link key={n.to} to={n.to} className="text-sm font-medium text-muted-foreground hover:text-foreground" activeProps={{ className: "text-sm font-medium text-accent" }}>{n.label}</Link>
           ))}
-          <Link to="/profile" className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90">Get Started</Link>
+          <Link to="/profile" className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90">{user ? "My profile" : "Get Started"}</Link>
+          {user ? <Button variant="ghost" size="sm" onClick={logout}>Sign out</Button> : <Link to="/auth" className="text-sm font-medium">Sign in</Link>}
         </nav>
-        <button className="md:hidden" aria-label="Toggle menu" aria-expanded={open} onClick={() => setOpen(!open)}>{open ? <X /> : <Menu />}</button>
+        <Button variant="ghost" size="icon" className="md:hidden" aria-label="Toggle menu" aria-expanded={open} onClick={() => setOpen(!open)}>{open ? <X /> : <Menu />}</Button>
       </div>
       {open && (
         <nav aria-label="Mobile" className="flex flex-col gap-1 border-t border-border px-4 py-3 md:hidden">
           {NAV.map((n) => <Link key={n.to} to={n.to} onClick={() => setOpen(false)} className="rounded-md px-2 py-2 hover:bg-muted">{n.label}</Link>)}
-          <Link to="/profile" onClick={() => setOpen(false)} className="mt-2 rounded-full bg-primary px-4 py-2 text-center font-semibold text-primary-foreground">Get Started</Link>
+          <Link to="/profile" onClick={() => setOpen(false)} className="mt-2 rounded-full bg-primary px-4 py-2 text-center font-semibold text-primary-foreground">{user ? "My profile" : "Get Started"}</Link>
+          {user ? <Button variant="ghost" onClick={logout}>Sign out</Button> : <Link to="/auth" onClick={() => setOpen(false)} className="px-2 py-2">Sign in</Link>}
         </nav>
       )}
     </header>

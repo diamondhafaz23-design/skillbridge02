@@ -1,4 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useAccount } from "@/components/AccountProvider";
+import { directoryOptions, accountOptions } from "@/lib/skillbridge-queries";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Search, BriefcaseBusiness, Languages, Clock, UserRound } from "lucide-react";
@@ -10,16 +13,20 @@ import { DIRECTORY_MENTORS, INDUSTRIES, LANGUAGES, filterMentors, type Mentor } 
 
 export const Route = createFileRoute("/mentors")({
   head: () => ({ meta: [{ title: "Mentors — SkillBridge" }, { name: "description", content: "Connect with professional mentors who help refugees rebuild careers, in their own language." }, { property: "og:title", content: "Mentors — SkillBridge" }, { property: "og:description", content: "Connect with professional mentors who help refugees rebuild careers, in their own language." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }),
+  loader: ({ context }) => context.queryClient.ensureQueryData(directoryOptions),
   component: Mentors,
 });
 
 function Mentors() {
+  const { user } = useAccount();
+  const account = useQuery(accountOptions(user?.id));
+  const { data: directory } = useSuspenseQuery(directoryOptions);
   const [area, setArea] = useState("All");
   const [language, setLanguage] = useState("All");
   const [query, setQuery] = useState("");
   const [requested, setRequested] = useState<string[]>([]);
   const [active, setActive] = useState<{ mentor: Mentor; mode: "profile" | "request" } | null>(null);
-  const list = filterMentors(DIRECTORY_MENTORS, query, area, language);
+  const list = filterMentors(directory.mentors, query, area, language);
   function clearFilters() { setArea("All"); setLanguage("All"); setQuery(""); }
   const selectClass = "h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
   return (
@@ -41,7 +48,7 @@ function Mentors() {
         </div>
         <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {list.map((m) => {
-            const r = requested.includes(m.id);
+            const r = Boolean(user && account.data?.requests.some(request => request.mentor_id === m.id && request.status === "pending"));
             return (
               <article key={m.id} aria-label={m.name} className="flex min-w-0 flex-col rounded-2xl border border-border bg-card p-6">
                 <div className="flex items-center justify-between gap-3"><div aria-hidden="true" className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-accent text-lg font-semibold text-accent-foreground">{m.name.split(" ").slice(-2).map((w) => w[0]).join("")}</div><span className="rounded-full bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">Sample profile</span></div>
@@ -51,12 +58,13 @@ function Mentors() {
                 <p className="mt-4 text-sm italic">"{m.story}"</p>
                 <p className="mt-3 flex-1 text-sm leading-relaxed text-muted-foreground">{m.bio.split(". ")[0]}.</p>
                 <div className="mt-4 flex flex-wrap gap-1.5">{m.skills.map((skill) => <span key={skill} className="rounded-full bg-secondary px-2.5 py-1 text-xs text-secondary-foreground">{skill}</span>)}</div>
-                <div className="mt-5 grid gap-2"><Button variant="outline" className="w-full rounded-full" aria-label={`View Profile: ${m.name}`} onClick={() => setActive({ mentor: m, mode: "profile" })}><UserRound aria-hidden="true" />View Profile</Button><Button disabled={r} aria-label={`Request Mentorship: ${m.name}`} onClick={() => setActive({ mentor: m, mode: "request" })} className="w-full rounded-full disabled:bg-secondary disabled:text-secondary-foreground">{r ? "Demo request submitted ✓" : "Request Mentorship"}</Button></div>
+                <div className="mt-5 grid gap-2"><Button variant="outline" className="w-full rounded-full" aria-label={`View Profile: ${m.name}`} onClick={() => setActive({ mentor: m, mode: "profile" })}><UserRound aria-hidden="true" />View Profile</Button><Button disabled={r} aria-label={`Request Mentorship: ${m.name}`} onClick={() => setActive({ mentor: m, mode: "request" })} className="w-full rounded-full disabled:bg-secondary disabled:text-secondary-foreground">{r ? "Request saved ✓" : "Request Mentorship"}</Button></div>
               </article>
             );
           })}
         </div>
         {list.length === 0 && <div className="py-16 text-center"><h2 className="text-2xl font-semibold">No mentors found</h2><p className="mt-2 text-muted-foreground">No sample profiles match your search and filters.</p><Button variant="outline" className="mt-4 rounded-full" onClick={clearFilters}>Clear filters</Button></div>}
+        {user && <section className="mt-10 border-t border-border pt-6"><h2 className="text-2xl font-semibold">Your private requests</h2>{account.isPending ? <p role="status">Loading requests…</p> : account.isError ? <p role="alert">Could not load your requests. <Button variant="link" onClick={() => account.refetch()}>Try again</Button></p> : account.data?.requests.length ? <ul className="mt-4 space-y-3">{account.data.requests.map(r => <li key={r.id} className="border-b border-border pb-3"><p className="font-semibold">{directory.mentors.find(m => m.id === r.mentor_id)?.name ?? "Mentor"} · {r.status}</p><p className="mt-1 text-sm">{r.message}</p><p className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString()} · Saved privately; sample mentors are not contacted.</p></li>)}</ul> : <p className="mt-2 text-sm text-muted-foreground">No requests saved yet.</p>}</section>}
         <div className="mt-14 rounded-2xl bg-secondary p-8 text-center">
           <h2 className="text-2xl font-semibold">Want to give back?</h2>
           <p className="mt-2 text-muted-foreground">One hour a month can change someone's career.</p>

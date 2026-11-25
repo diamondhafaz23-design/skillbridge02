@@ -1,4 +1,11 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { useAccount } from "@/components/AccountProvider";
+import { SignInNotice } from "@/components/SignInNotice";
+import { Button } from "@/components/ui/button";
+import { accountOptions } from "@/lib/skillbridge-queries";
+import { saveCloudAssessment } from "@/lib/skillbridge.functions";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Award, BadgeCheck, Briefcase, Pencil, Save, Sparkles, User } from "lucide-react";
@@ -16,6 +23,12 @@ const field = "mt-1 w-full rounded-lg border border-input bg-card px-3 py-2 font
 const chip = (on: boolean) => "rounded-full border px-3 py-1 text-xs font-medium transition " + (on ? "border-accent bg-accent text-accent-foreground" : "border-border hover:border-accent");
 
 function Assessment() {
+  const { user, loading } = useAccount();
+  const account = useQuery(accountOptions(user?.id));
+  const queryClient = useQueryClient();
+  const persist = useServerFn(saveCloudAssessment);
+  const navigate = useNavigate();
+  const [busy, setBusy] = useState(false);
   const [stage, setStage] = useState<Stage>("quiz");
   const [i, setI] = useState(0);
   const [answers, setAnswers] = useState<number[]>([]);
@@ -26,9 +39,10 @@ function Assessment() {
   const [savedAt, setSavedAt] = useState<string | null>(null);
 
   useEffect(() => {
-    const s = loadAssessment();
+    if (loading || (user && account.isPending)) return;
+    const s = user ? account.data?.assessment : loadAssessment();
     if (s) { setAnswers(s.quizAnswers); setI(s.quizAnswers.length); setExp(s.experience); setLangText(s.experience.languages.join(", ")); setSavedAt(s.savedAt); setStage("results"); }
-  }, []);
+  }, [loading, user, account.data, account.isPending]);
 
   const q = QUIZ[i];
   const quizDone = answers.length === QUIZ.length;
@@ -41,12 +55,26 @@ function Assessment() {
 
   const verified = verifiedSkills(answers);
   const selfReported = selfReportedSkills(exp, verified);
-  const save = () => { const s = saveAssessment({ quizAnswers: answers, experience: exp }); setSavedAt(s.savedAt); toast.success("Assessment saved on this device", { description: "Your matches now use this profile." }); };
+  const save = async () => {
+    if (user && (account.isPending || account.isError)) { toast.error("Wait for your saved assessment to load, or try loading again."); return false; }
+    setBusy(true);
+    try {
+      const s = user ? await persist({ data: { quizAnswers: answers, experience: exp } }) : saveAssessment({ quizAnswers: answers, experience: exp });
+      setSavedAt(s.savedAt);
+      if (user) await queryClient.invalidateQueries({ queryKey: ['account', user.id] });
+      toast.success(user ? "Assessment saved privately to your account" : "Assessment saved on this device");
+      return true;
+    } catch { toast.error("Could not save your assessment. Please try again."); return false; }
+    finally { setBusy(false); }
+  };
 
   return (
     <>
       <PageHeading eyebrow="Interactive assessment" title="Show what you can do" text="Two parts: a short knowledge check, then your real-world experience. Skip the quiz if you prefer — your experience still counts." />
       <div className="mx-auto max-w-3xl px-4 py-12">
+        {!user && !loading && <SignInNotice />}
+        {user && account.isError && <p role="alert">Could not load your saved assessment. <Button variant="link" onClick={() => account.refetch()}>Try again</Button></p>}
+        {user && account.isPending && <p role="status">Loading saved assessment…</p>}
         <ol className="mb-8 grid grid-cols-3 gap-2 text-xs" aria-label="Assessment progress">
           {(["Knowledge assessment", "Experience & practical skills", "Your skills profile"] as const).map((l, k) => {
             const active = ["quiz", "experience", "results"].indexOf(stage) >= k;
@@ -146,12 +174,12 @@ function Assessment() {
             </section>
 
             <div className="flex flex-wrap justify-center gap-3">
-              <button onClick={save} className="flex items-center gap-2 rounded-full bg-primary px-6 py-3 font-semibold text-primary-foreground"><Save className="h-4 w-4" />Save results</button>
+              <Button disabled={busy || Boolean(user && (account.isPending || account.isError))} onClick={() => void save()} className="flex items-center gap-2 rounded-full bg-primary px-6 py-3 font-semibold text-primary-foreground"><Save className="h-4 w-4" />{busy ? "Saving…" : "Save results"}</Button>
               <button onClick={() => setStage("experience")} className="flex items-center gap-2 rounded-full border border-border px-6 py-3 font-semibold hover:bg-muted"><Pencil className="h-4 w-4" />Edit experience</button>
               <button onClick={retakeQuiz} className="flex items-center gap-2 rounded-full border border-border px-6 py-3 font-semibold hover:bg-muted"><Award className="h-4 w-4" />Retake quiz</button>
-              <Link to="/opportunities" onClick={save} className="flex items-center gap-2 rounded-full bg-accent px-6 py-3 font-semibold text-accent-foreground"><Sparkles className="h-4 w-4" />Save & see matching jobs</Link>
+              <Button disabled={busy} onClick={async () => { if (await save()) await navigate({ to: "/opportunities" }); }} className="flex items-center gap-2 rounded-full bg-accent px-6 py-3 font-semibold text-accent-foreground"><Sparkles className="h-4 w-4" />Save & see matching jobs</Button>
             </div>
-            <p className="text-center text-xs text-muted-foreground">Saved in this browser only ({selfReported.length} self-reported and {verified.length} verified skills used for matching).</p>
+            <p className="text-center text-xs text-muted-foreground">{user ? "Saved privately to your account" : "Saved in this browser only"} ({selfReported.length} self-reported and {verified.length} verified skills used for matching).</p>
           </div>
         )}
       </div>

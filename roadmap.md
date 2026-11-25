@@ -15,3 +15,9 @@
 - [x] Confirm the root homepage contains the requested content and calls to action.
 - [x] Verify every main page route and shared navigation destination.
 - [x] Test returning home with the logo from every page on desktop and mobile.
+
+# Lovable Cloud persistence
+- [ ] Create private profiles, skills, assessments and requests, and public sample listings.
+- [ ] Add registration, sign-in and sign-out with email confirmation preserved.
+- [ ] Connect profile, assessment, matching and mentorship forms to Cloud.
+- [ ] Verify registration, saved records, matching and cross-user privacy.

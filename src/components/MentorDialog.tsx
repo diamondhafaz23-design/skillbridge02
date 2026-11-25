@@ -1,3 +1,8 @@
+import { useServerFn } from "@tanstack/react-start";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAccount } from "./AccountProvider";
+import { SignInNotice } from "./SignInNotice";
+import { submitMentorshipRequest } from "@/lib/skillbridge.functions";
 import { useState, type FormEvent } from "react";
 import { CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
@@ -16,10 +21,14 @@ type Props = {
 };
 
 export function MentorDialog({ mentor, mode, onClose, onRequest, onSubmitted }: Props) {
+  const { user } = useAccount();
+  const persist = useServerFn(submitMentorshipRequest);
+  const queryClient = useQueryClient();
+  const [busy, setBusy] = useState(false);
   const [fields, setFields] = useState({ name: "", email: "", language: mentor.langs[0] ?? "English", message: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
-  function submit(event: FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const result = mentorshipRequestSchema.safeParse(fields);
     if (!result.success) {
@@ -37,11 +46,18 @@ export function MentorDialog({ mentor, mode, onClose, onRequest, onSubmitted }: 
       setErrors({ language: "Choose a language this mentor speaks." });
       return;
     }
+    if (!user) { toast.error("Sign in to save your mentorship request."); return; }
+    setBusy(true);
+    try {
+      await persist({ data: { ...result.data, mentorId: mentor.id } });
+      await queryClient.invalidateQueries({ queryKey: ['account', user.id] });
+    } catch { toast.error("Could not save your request. Please try again."); setBusy(false); return; }
+    setBusy(false);
     setErrors({});
     setFields({ name: "", email: "", language: mentor.langs[0] ?? "English", message: "" });
     setSubmitted(true);
     onSubmitted();
-    toast.success("Demo mentorship request submitted", { description: `For ${mentor.name}. No request was sent to a real mentor.` });
+    toast.success("Mentorship request saved privately", { description: `For sample mentor ${mentor.name}. No email was sent.` });
   }
   const selectClass = "h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
   return (
@@ -67,18 +83,19 @@ export function MentorDialog({ mentor, mode, onClose, onRequest, onSubmitted }: 
         ) : submitted ? (
           <div className="space-y-4" role="status">
             <CheckCircle2 className="h-10 w-10 text-accent" aria-hidden="true" />
-            <p className="font-semibold">Your demo mentorship request has been submitted.</p>
-            <p className="text-sm text-muted-foreground">This is a sample interaction. Your details were not saved, no email was sent and {mentor.name} will not receive a request.</p>
+            <p className="font-semibold">Your mentorship request has been saved privately.</p>
+            <p className="text-sm text-muted-foreground">Your request is saved to your account and appears under Your private requests. No email was sent: {mentor.name} is a fictional mentor and will not receive a request.</p>
             <Button className="w-full rounded-full" onClick={onClose}>Done</Button>
           </div>
         ) : (
           <form onSubmit={submit} noValidate className="space-y-4">
-            <p className="text-sm text-muted-foreground">Demo request only — details are not saved or sent. All fields are required.</p>
+            {!user && <SignInNotice />}
+            <p className="text-sm text-muted-foreground">This request is saved privately to your account. This mentor is fictional and will not be contacted. All fields are required.</p>
             <div><label htmlFor="request-name" className="mb-1.5 block text-sm font-medium">Your name</label><Input id="request-name" name="name" autoComplete="name" maxLength={100} required value={fields.name} onChange={(e) => setFields({ ...fields, name: e.target.value })} aria-invalid={Boolean(errors['name'])} aria-describedby={errors['name'] ? "name-error" : undefined} />{errors['name'] && <p id="name-error" className="mt-1 text-sm text-destructive">{errors['name']}</p>}</div>
             <div><label htmlFor="request-email" className="mb-1.5 block text-sm font-medium">Email address</label><Input id="request-email" name="email" type="email" autoComplete="email" maxLength={255} required value={fields.email} onChange={(e) => setFields({ ...fields, email: e.target.value })} aria-invalid={Boolean(errors['email'])} aria-describedby={errors['email'] ? "email-error" : undefined} />{errors['email'] && <p id="email-error" className="mt-1 text-sm text-destructive">{errors['email']}</p>}</div>
             <div><label htmlFor="request-language" className="mb-1.5 block text-sm font-medium">Preferred language</label><select id="request-language" name="language" className={selectClass} required value={fields.language} onChange={(e) => setFields({ ...fields, language: e.target.value })} aria-invalid={Boolean(errors['language'])} aria-describedby={errors['language'] ? "language-error" : undefined}>{mentor.langs.map((language) => <option key={language}>{language}</option>)}</select>{errors['language'] && <p id="language-error" className="mt-1 text-sm text-destructive">{errors['language']}</p>}</div>
             <div><label htmlFor="request-message" className="mb-1.5 block text-sm font-medium">What would you like help with?</label><Textarea id="request-message" name="message" rows={4} maxLength={1000} required value={fields.message} onChange={(e) => setFields({ ...fields, message: e.target.value })} aria-invalid={Boolean(errors['message'])} aria-describedby={errors['message'] ? "message-error" : undefined} />{errors['message'] && <p id="message-error" className="mt-1 text-sm text-destructive">{errors['message']}</p>}<p className="mt-1 text-right text-xs text-muted-foreground">{fields.message.length}/1,000</p></div>
-            <Button type="submit" className="w-full rounded-full">Submit demo request</Button>
+            <Button disabled={busy || !user} type="submit" className="w-full rounded-full">{busy ? "Saving…" : "Save mentorship request"}</Button>
           </form>
         )}
       </DialogContent>
