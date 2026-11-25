@@ -29,7 +29,7 @@ export function filterMentors(mentors: Mentor[], query: string, industry: string
   );
 }
 
-// Demo-only: validated inputs stay in memory and are never sent to a service.
+// Shared client/server validation; sample mentor requests are stored privately, never delivered.
 export const mentorshipRequestSchema = z.object({
   name: z.string().trim().min(1, "Enter your name.").max(100, "Use 100 characters or fewer."),
   email: z.string().trim().email("Enter a valid email address.").max(255, "Use 255 characters or fewer."),

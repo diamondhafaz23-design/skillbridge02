@@ -39,6 +39,10 @@ function Assessment() {
   const [savedAt, setSavedAt] = useState<string | null>(null);
 
   useEffect(() => {
+    setAnswers([]); setI(0); setPicked(null); setExp(EMPTY_EXPERIENCE); setLangText(""); setSavedAt(null); setStage("quiz");
+  }, [user?.id]);
+
+  useEffect(() => {
     if (loading || (user && account.isPending)) return;
     const s = user ? account.data?.assessment : loadAssessment();
     if (s) { setAnswers(s.quizAnswers); setI(s.quizAnswers.length); setExp(s.experience); setLangText(s.experience.languages.join(", ")); setSavedAt(s.savedAt); setStage("results"); }
