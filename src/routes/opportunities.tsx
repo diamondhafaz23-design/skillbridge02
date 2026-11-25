@@ -1,0 +1,60 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
+import { MapPin, ShieldCheck } from "lucide-react";
+import { PageHeading } from "@/components/PageHeading";
+import { JOBS, SKILLS, matchScore } from "@/data/skillbridge";
+
+export const Route = createFileRoute("/opportunities")({
+  head: () => ({ meta: [{ title: "Opportunities — SkillBridge" }, { name: "description", content: "Discover jobs matched to your existing skills with live match scores and skills gap analysis." }, { property: "og:title", content: "Opportunities — SkillBridge" }, { property: "og:description", content: "Discover jobs matched to your existing skills with live match scores and skills gap analysis." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }),
+  component: Opportunities,
+});
+
+function Opportunities() {
+  const [have, setHave] = useState<string[]>(["Excel", "English", "Accounting"]);
+  const [flexOnly, setFlexOnly] = useState(false);
+  const jobs = useMemo(() => JOBS.filter((j) => !flexOnly || j.credentialFlexible).map((j) => ({ ...j, ...matchScore(have, j) })).sort((a, b) => b.score - a.score), [have, flexOnly]);
+  const toggle = (s: string) => setHave((h) => (h.includes(s) ? h.filter((x) => x !== s) : [...h, s]));
+  return (
+    <>
+      <PageHeading eyebrow="Skills-First Matching Engine" title="Opportunities matched to you" text="Select the skills you have. Jobs are ranked by what you can do — and we show the exact gaps to close." />
+      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 lg:grid-cols-[300px_1fr]">
+        <aside className="h-fit rounded-2xl border border-border bg-card p-5 lg:sticky lg:top-20">
+          <h2 className="text-lg font-semibold">Your skills</h2>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {SKILLS.map((s) => (
+              <button key={s} aria-pressed={have.includes(s)} onClick={() => toggle(s)} className={"rounded-full border px-3 py-1 text-xs font-medium transition " + (have.includes(s) ? "border-accent bg-accent text-accent-foreground" : "border-border hover:border-accent")}>{s}</button>
+            ))}
+          </div>
+          <label className="mt-5 flex items-center gap-2 text-sm"><input type="checkbox" checked={flexOnly} onChange={(e) => setFlexOnly(e.target.checked)} className="accent-[var(--accent)]" /> Credential-flexible only</label>
+        </aside>
+        <ul className="space-y-4">
+          {jobs.map((j) => (
+            <li key={j.id} className="rounded-2xl border border-border bg-card p-6 transition hover:shadow-soft">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-xl font-semibold">{j.title}</h3>
+                  <p className="text-sm text-muted-foreground">{j.company} · {j.type}</p>
+                  <p className="mt-1 flex items-center gap-1 text-sm text-muted-foreground"><MapPin className="h-4 w-4" />{j.location}</p>
+                </div>
+                <div className="text-right">
+                  <p className="font-display text-3xl text-accent">{j.score}%</p>
+                  <p className="text-xs text-muted-foreground">skills match</p>
+                </div>
+              </div>
+              <div className="mt-3 h-2 rounded-full bg-muted"><div className="h-2 rounded-full bg-accent transition-all" style={{ width: j.score + "%" }} /></div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {j.skills.map((s) => <span key={s} className={"rounded-full px-2.5 py-0.5 text-xs " + (have.includes(s) ? "bg-secondary text-secondary-foreground" : "border border-dashed border-warm")}>{have.includes(s) ? "✓ " : "+ "}{s}</span>)}
+              </div>
+              {j.missing.length > 0 && <p className="mt-3 text-sm">Gap: <b>{j.missing.join(", ")}</b> — <Link to="/resources" className="text-accent underline">see learning paths</Link></p>}
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                {j.credentialFlexible ? <span className="flex items-center gap-1 text-xs font-medium text-accent"><ShieldCheck className="h-4 w-4" />Recognises international experience</span> : <span className="text-xs text-muted-foreground">Local certification required</span>}
+                <button onClick={() => toast.success("Application sent to " + j.company, { description: "Your skills profile was shared. A mentor can help you prepare." })} className="rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90">Apply with skills profile</button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </>
+  );
+}
