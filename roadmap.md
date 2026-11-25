@@ -10,3 +10,8 @@
 - [x] Preserve existing links and mentorship content; verify desktop/mobile navigation and layout.
 # Skills assessment expansion
 - [x] Add experience section, combined profile, saving and matching link.
+
+# Homepage and navigation verification
+- [x] Confirm the root homepage contains the requested content and calls to action.
+- [x] Verify every main page route and shared navigation destination.
+- [x] Test returning home with the logo from every page on desktop and mobile.
