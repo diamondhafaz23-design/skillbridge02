@@ -8,3 +8,5 @@
 - [x] Preserve the hero and clarify its sample matching preview.
 - [x] Add the problem, three-step journey, key features, differentiation and profile call to action.
 - [x] Preserve existing links and mentorship content; verify desktop/mobile navigation and layout.
+# Skills assessment expansion
+- [x] Add experience section, combined profile, saving and matching link.

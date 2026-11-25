@@ -31,3 +31,4 @@ use the editor.
 
 - Keep mentor directory enrichment, filtering and request validation in a browser-safe data module; this preserves the original shared homepage examples.
 - Mentor requests are frontend-only demonstrations and must not claim real delivery or persistence; any future submission service must revalidate the shared schema server-side.
+- Assessment results are saved in browser localStorage only; verified skills come solely from correct quiz answers and self-reported skills are weighted lower in matching.
